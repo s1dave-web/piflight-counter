@@ -1,7 +1,8 @@
 FROM python:3.13-slim
 LABEL org.opencontainers.image.source="https://github.com/s1dave-web/piflight-counter" \
       org.opencontainers.image.description="Counts piFlight LED displays online: stores salted ID hashes, no IP addresses"
-RUN useradd --system --uid 10001 counter && mkdir /data && chown counter /data
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --uid 10001 counter && mkdir /data && chown counter /data
 COPY counter.py /app/counter.py
 USER counter
 VOLUME /data

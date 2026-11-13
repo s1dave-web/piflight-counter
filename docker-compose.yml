@@ -4,6 +4,8 @@ services:
   counter:
     image: ghcr.io/s1dave-web/piflight-counter:latest
     restart: unless-stopped
+    environment:
+      TZ: Europe/London               # for the times in the log
     ports:
       - "127.0.0.1:8085:8080"
     volumes:

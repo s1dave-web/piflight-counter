@@ -9,6 +9,9 @@ Stored per device: a salted hash of its random ID, first and last check-in time,
 number of planes it has shown in all ("planes", optional: sent only by devices whose owner agreed to it).
 IP addresses are never stored or logged. They're used, in memory only, to stop one address from
 inventing more than NEW_PER_IP_PER_HOUR new devices an hour.
+
+Each check-in prints one line (new or known device, version, style, planes, and the totals), with nothing
+that identifies a device or where it connected from: no IP, no ID, no hash.
 """
 import hashlib
 import json
@@ -67,13 +70,20 @@ DBC = None
 SALT = None
 
 
+def log(msg, now=None):
+    t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() if now is None else now))
+    print(f"{t} {msg}", flush=True)
+
+
 def checkin(ip, payload, now=None):
     """Record a check-in. Returns (http_status, reply_dict)."""
     now = int(time.time() if now is None else now)
     if not isinstance(payload, dict):
+        log("check-in refused: not a check-in", now)
         return 400, {"error": "bad request"}
     did, version, style = payload.get("id"), payload.get("version"), payload.get("style")
     if not (isinstance(did, str) and _ID.match(did)):
+        log("check-in refused: bad id", now)
         return 400, {"error": "bad id"}
     version = version if isinstance(version, str) and _VERSION.match(version) else "?"
     style = style if style in STYLES else "other"
@@ -85,6 +95,7 @@ def checkin(ip, payload, now=None):
         if not known:
             recent = [t for t in _new_by_ip[ip] if now - t < 3600]
             if len(recent) >= NEW_PER_IP_PER_HOUR:
+                log("check-in refused: too many new devices from one address", now)
                 return 429, {"error": "slow down"}
             recent.append(now)
             _new_by_ip[ip] = recent
@@ -95,7 +106,10 @@ def checkin(ip, payload, now=None):
                         (now, version, style, planes, key))
         DBC.execute("DELETE FROM devices WHERE last < ?", (now - KEEP_SECONDS,))
         DBC.commit()
-    return 200, {"online": online(now), "planes": planes_total()}
+        reply = {"online": online(now), "planes": planes_total()}
+    log(f"check-in: {'known' if known else 'NEW'} device · {version} · {style} · {planes:,} planes"
+        f" → {reply['online']} online, {reply['planes']:,} planes in all", now)
+    return 200, reply
 
 
 def planes_total():

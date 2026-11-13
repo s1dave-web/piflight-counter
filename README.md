@@ -22,7 +22,8 @@ The server keeps:
 
 Devices not seen for 400 days are deleted.
 
-**No IP addresses are stored or logged.** The counter has no access log. It uses IPs only in memory, to stop one
+**No IP addresses are stored or logged.** The counter has no access log. Its log has one line per check-in
+(new or known device, version, style, planes, and the totals), with no IP, ID or hash. It uses IPs only in memory, to stop one
 address inventing more than 20 new devices an hour. Behind Cloudflare it reads `CF-Connecting-IP` for that; Cloudflare's own logging is separate.
 
 This is all of the code: [`counter.py`](counter.py), Python standard library plus SQLite.
@@ -39,3 +40,4 @@ Then point your reverse proxy at `127.0.0.1:8085`, with HTTPS and access logging
 - **Update:** in Portainer, *Pull and redeploy*; or `docker compose pull && docker compose up -d`.
 - **Back up** the `counter-data` volume (`counter.db` and `salt`). Keep `salt`: without it every device would count as new.
 - **Settings (environment):** `COUNTER_DATA` (default `/data`) and `COUNTER_PORT` (default `8080`).
+  Log times are UTC unless you set `TZ`, for example `TZ: Europe/London`.
