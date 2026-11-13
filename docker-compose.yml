@@ -1,0 +1,18 @@
+# piFlight counter. Works as-is in Portainer (Stacks > Add stack > Web editor) or with `docker compose up -d`.
+# Put your reverse proxy (with HTTPS) in front of 127.0.0.1:8085.
+services:
+  counter:
+    image: ghcr.io/s1dave-web/piflight-counter:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8085:8080"
+    volumes:
+      - counter-data:/data            # counter.db and salt: back these up, and never lose salt
+    logging:                          # the counter logs no requests; keep Docker's own log small too
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "2"
+
+volumes:
+  counter-data:
